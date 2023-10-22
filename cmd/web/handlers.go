@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -15,9 +16,25 @@ func homeHandler(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	_, err := writer.Write([]byte("Hello from snippetBox"))
+	//Initialise slice containing path to templates
+	templateFiles := []string{
+		"./ui/html/templates/base.html",
+		"./ui/html/templates/nav.html",
+		"./ui/html/templates/pages/home.html",
+	}
+	//Read template file into template set
+	ts, err := template.ParseFiles(templateFiles...)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err.Error())
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	//Write template content as the response body
+	err = ts.ExecuteTemplate(writer, "base", nil)
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(writer, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
