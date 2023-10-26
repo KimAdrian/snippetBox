@@ -1,11 +1,22 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
+
+	//Add command line flag for addr value
+	addr := flag.String("addr", ":8080", "HTTP network address")
+	flag.Parse()
+
+	//Specify log levels
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 	//Multiplexer for routing
 	mux := http.NewServeMux()
 
@@ -17,11 +28,17 @@ func main() {
 	mux.HandleFunc("/snippet/view", viewSnippetsHandler)
 	mux.HandleFunc("/snippet/create", createSnippetHandler)
 
+	server := &http.Server{
+		Addr:     *addr,
+		Handler:  mux,
+		ErrorLog: errorLog,
+	}
+
 	//Start server
-	log.Print("Starting server on port 8080")
-	err := http.ListenAndServe("localhost:8080", mux)
+	infoLog.Printf("Starting server on port %s", *addr)
+	err := server.ListenAndServe()
 	if err != nil {
-		log.Fatalf("Error: %d", err)
+		errorLog.Fatal(err)
 	}
 
 }
