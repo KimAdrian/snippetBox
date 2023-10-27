@@ -7,6 +7,12 @@ import (
 	"os"
 )
 
+// Struct to hold our application wide dependencies
+type application struct {
+	errorLog *log.Logger
+	infoLog  *log.Logger
+}
+
 func main() {
 
 	//Add command line flag for addr value
@@ -17,6 +23,12 @@ func main() {
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
+	//initialise struct
+	app := &application{
+		errorLog: errorLog,
+		infoLog:  infoLog,
+	}
+
 	//Multiplexer for routing
 	mux := http.NewServeMux()
 
@@ -24,9 +36,9 @@ func main() {
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
-	mux.HandleFunc("/", homeHandler)
-	mux.HandleFunc("/snippet/view", viewSnippetsHandler)
-	mux.HandleFunc("/snippet/create", createSnippetHandler)
+	mux.HandleFunc("/", app.homeHandler)
+	mux.HandleFunc("/snippet/view", app.viewSnippetsHandler)
+	mux.HandleFunc("/snippet/create", app.createSnippetHandler)
 
 	server := &http.Server{
 		Addr:     *addr,
