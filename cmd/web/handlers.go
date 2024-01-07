@@ -1,8 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"html/template"
+	"github.com/KimAdrian/snippetBox/internal/model"
 	"net/http"
 	"strconv"
 )
@@ -15,24 +16,33 @@ func (app *application) homeHandler(writer http.ResponseWriter, request *http.Re
 		return
 	}
 
-	//Initialise slice containing path to templates
-	templateFiles := []string{
-		"./ui/html/templates/base.html",
-		"./ui/html/templates/nav.html",
-		"./ui/html/templates/pages/home.html",
-	}
-	//Read template file into template set
-	ts, err := template.ParseFiles(templateFiles...)
+	snippets, err := app.snippets.Latest()
 	if err != nil {
 		app.serverError(writer, err)
 		return
 	}
 
-	//Write template content as the response body
-	err = ts.ExecuteTemplate(writer, "base", nil)
-	if err != nil {
-		app.serverError(writer, err)
+	for _, snippet := range snippets {
+		fmt.Fprintf(writer, "%+v\n", snippet)
 	}
+	//Initialise slice containing path to templates
+	//templateFiles := []string{
+	//	"./ui/html/templates/base.html",
+	//	"./ui/html/templates/nav.html",
+	//	"./ui/html/templates/pages/home.html",
+	//}
+	////Read template file into template set
+	//ts, err := template.ParseFiles(templateFiles...)
+	//if err != nil {
+	//	app.serverError(writer, err)
+	//	return
+	//}
+	//
+	////Write template content as the response body
+	//err = ts.ExecuteTemplate(writer, "base", nil)
+	//if err != nil {
+	//	app.serverError(writer, err)
+	//}
 }
 
 func (app *application) viewSnippetsHandler(writer http.ResponseWriter, request *http.Request) {
@@ -44,7 +54,18 @@ func (app *application) viewSnippetsHandler(writer http.ResponseWriter, request 
 		return
 	}
 
-	fmt.Fprintf(writer, "Display a specific snippet with ID %d", id)
+	snippet, err := app.snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, model.ErrNoRecord) {
+			app.notFound(writer)
+		} else {
+			app.serverError(writer, err)
+		}
+		return
+	}
+
+	//Write the snippet data as a plain textHTTP response body
+	fmt.Fprintf(writer, "%+v", snippet)
 }
 
 func (app *application) createSnippetHandler(writer http.ResponseWriter, request *http.Request) {
